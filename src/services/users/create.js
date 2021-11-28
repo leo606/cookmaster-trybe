@@ -13,8 +13,9 @@ module.exports = async (user) => {
     if (findUser) {
       return { err: { code: 'emailAlreadyExists' } };
     }
-    const inserted = await users.insert({ ...user });
-    return inserted.ops[0];
+    const inserted = await users.insert({ ...user, role: 'user' });
+    const { password, ...usrData } = inserted.ops[0];
+    return usrData;
   } catch (e) {
     console.error(e);
   }

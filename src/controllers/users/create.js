@@ -4,7 +4,7 @@ const service = require('../../services/users');
 const errorsObjs = {
   invalidEntries: { err: {
     code: 'invalid_entries',
-    message: 'Invalid entries. Try again',
+    message: 'Invalid entries. Try again.',
   } },
   emailAlreadyExists: { err: {
     code: 'email_already_exists',
