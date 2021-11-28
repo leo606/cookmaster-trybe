@@ -11,4 +11,6 @@ app.get('/', (request, response) => {
 
 app.use(require('../controllers'));
 
+app.use(require('../middlewares/error'));
+
 module.exports = app;
