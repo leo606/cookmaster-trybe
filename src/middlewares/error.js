@@ -4,6 +4,8 @@ function getStatus(code) {
   switch (code) {
     case 'invalid_entries':
       return statusCode.badRequest;
+    case 'email_already_exists':
+      return statusCode.conflict;
     default:
   }
 }
