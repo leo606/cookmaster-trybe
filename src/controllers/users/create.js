@@ -1,14 +1,22 @@
 const statusCode = require('../../commons/statusCodes.json');
+const service = require('../../services/users');
 
-module.exports = (req, res, next) => {
-  const { name, email, password } = req.body;
+const ERR_OBJ = { err: {
+  code: 'invalid_entries',
+  message: 'Invalid entries. Try again',
+} };
 
-  if (!name || !email || !password) {
-    return next({ err: {
-      code: 'invalid_entries',
-      message: 'Invalid entries. Try again',
-    } });
-  }
+module.exports = async (req, res, next) => {
+  try {
+    const { name, email, password } = req.body;
   
-  res.status(statusCode.notImplemented).end();
+    const created = await service.create({ name, email, password });
+    if (created.err) {
+      return next(ERR_OBJ);
+    }
+    
+    res.status(statusCode.created).json(created);
+  } catch (e) {
+    console.error(e);
+  }
 };
