@@ -7,6 +7,7 @@ const router = express.Router();
 router.post('/', validateJWT, require('./create'));
 router.get('/:id', require('./get'));
 router.put('/:id', validateJWT, require('./update'));
+router.delete('/:id', validateJWT, require('./remove'));
 router.get('/', require('./list'));
 
 module.exports = router;
