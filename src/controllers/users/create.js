@@ -1,16 +1,7 @@
 const statusCode = require('../../commons/statusCodes.json');
 const service = require('../../services/users');
 
-const errorsObjs = {
-  invalidEntries: { err: {
-    code: 'invalid_entries',
-    message: 'Invalid entries. Try again.',
-  } },
-  emailAlreadyExists: { err: {
-    code: 'email_already_exists',
-    message: 'Email already registered',
-  } },
-};
+const errorsObjs = require('../../commons/errorObjs.json');
 
 module.exports = async (req, res, next) => {
   try {

@@ -1,0 +1,10 @@
+{
+  "invalidEntries": { "err": {
+    "code": "invalid_entries",
+    "message": "Invalid entries. Try again."
+  } },
+  "emailAlreadyExists": { "err": {
+    "code": "email_already_exists",
+    "message": "Email already registered"
+  } }
+}
