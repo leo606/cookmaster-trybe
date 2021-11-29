@@ -8,6 +8,8 @@ function getStatus(code) {
       return statusCode.conflict;
     case 'unauthorized':
       return statusCode.unauthorized;
+    case 'not_found':
+        return statusCode.notFound;
     default:
   }
 }

@@ -6,5 +6,13 @@
   "emailAlreadyExists": { "err": {
     "code": "email_already_exists",
     "message": "Email already registered"
+  } },
+  "invalidRcpId": { "err": {
+    "code": "invalid_entries",
+    "message": "Invalid entries. Try again."
+  } },
+  "rcpNotFound": { "err": {
+    "code": "not_found",
+    "message": "recipe not found"
   } }
 }
