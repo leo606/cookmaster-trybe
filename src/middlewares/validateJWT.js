@@ -4,6 +4,9 @@ const secret = 'thisIsASuperSecretKey';
 
 module.exports = async (req, _res, next) => {
   const token = req.headers.authorization;
+  if (!token) {
+    return next({ err: { message: 'missing auth token', code: 'unauthorized' } });
+  }
 
   try {
     const decoded = jwt.verify(token, secret);

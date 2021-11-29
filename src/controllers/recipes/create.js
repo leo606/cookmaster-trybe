@@ -8,12 +8,12 @@ module.exports = async (req, res, next) => {
     const { name, ingredients, preparation } = req.body;
     const { user: { _id: userId } } = req;
     
-    const created = await service.create({ name, ingredients, preparation });
+    const created = await service.create({ name, ingredients, preparation }, userId);
     if (created.err) {
       return next(errorsObjs[created.err.code]);
     }
 
-    return res.status(statusCode.created).json({ recipe: { ...created, userId } });
+    return res.status(statusCode.created).json({ recipe: { ...created } });
   } catch (e) {
     console.error(e);
   }
