@@ -9,8 +9,6 @@ app.get('/', (request, response) => {
 });
 // Não remover esse end-point, ele é necessário para o avaliador
 
-app.use(express.static(`${__dirname}/../../`));
-
 app.use(require('../controllers'));
 
 app.use(require('../middlewares/error'));
