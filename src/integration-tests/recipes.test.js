@@ -27,105 +27,150 @@ describe("testa funcionamento de recipes", () => {
     await MongoClient.connect.restore();
   });
 
-  describe("quando não é enviado token", () => {
-    let response = {};
-    before(async () => {
-      response = await chai
-        .request(server)
-        .post("/recipes")
-        .send({
-          name: "recipe one",
-          ingredients: "recipe ingredients",
-          preparation: "recipe preparation",
-        })
-        .set("authorization", "");
+  describe("POST recipes", () => {
+    describe("quando não é enviado token", () => {
+      let response = {};
+      before(async () => {
+        response = await chai
+          .request(server)
+          .post("/recipes")
+          .send({
+            name: "recipe one",
+            ingredients: "recipe ingredients",
+            preparation: "recipe preparation",
+          })
+          .set("authorization", "");
+      });
+
+      it("retorna status 401", () => {
+        expect(response).to.have.status(401);
+      });
+
+      it("retorna body com msg de erro", () => {
+        expect(response.body).to.have.property("message");
+      });
     });
 
-    it("retorna status 401", () => {
-      expect(response).to.have.status(401);
+    describe("quando é enviado token, mas dados invalidos", () => {
+      let response = {};
+      before(async () => {
+        const db = await connMock.db("Cookmaster");
+        await db.collection("users").insertOne({
+          name: "user mock",
+          email: "mock@gmail.com",
+          password: "12345678",
+          role: "user",
+        });
+
+        const {
+          body: { token },
+        } = await chai.request(server).post("/login").send({
+          email: "mock@gmail.com",
+          password: "12345678",
+        });
+
+        response = await chai
+          .request(server)
+          .post("/recipes")
+          .send({
+            // name: "recipe one",
+            // ingredients: "recipe ingredients",
+            // preparation: "recipe preparation",
+          })
+          .set("authorization", token);
+      });
+
+      it("retorna status 401", () => {
+        expect(response).to.have.status(400);
+      });
+
+      it("retorna body com msg de erro", () => {
+        expect(response.body).to.have.property(
+          "message",
+          "Invalid entries. Try again."
+        );
+      });
     });
 
-    it("retorna body com msg de erro", () => {
-      expect(response.body).to.have.property("message");
+    describe("quando é enviado token e dados validos", () => {
+      let response = {};
+      before(async () => {
+        const db = await connMock.db("Cookmaster");
+        await db.collection("users").insertOne({
+          name: "user mock",
+          email: "mock@gmail.com",
+          password: "12345678",
+          role: "user",
+        });
+
+        const {
+          body: { token },
+        } = await chai.request(server).post("/login").send({
+          email: "mock@gmail.com",
+          password: "12345678",
+        });
+
+        response = await chai
+          .request(server)
+          .post("/recipes")
+          .send({
+            name: "recipe one",
+            ingredients: "recipe ingredients",
+            preparation: "recipe preparation",
+          })
+          .set("authorization", token);
+      });
+
+      it("retorna status 201", () => {
+        expect(response).to.have.status(201);
+      });
+
+      it("retorna body com msg de erro", () => {
+        expect(response.body).to.have.property("recipe").that.is.an("object");
+      });
     });
   });
 
-  describe("quando é enviado token, mas dados invalidos", () => {
-    let response = {};
-    before(async () => {
-      const db = await connMock.db("Cookmaster");
-      await db.collection("users").insertOne({
-        name: "user mock",
-        email: "mock@gmail.com",
-        password: "12345678",
-        role: "user",
+  describe("GET recipes", () => {
+    describe("quando não é enviado token", () => {
+      let response = {};
+      before(async () => {
+        // const db = await connMock.db("Cookmaster");
+        // await db.collection("recipes").drop();
+        response = await chai.request(server).get("/recipes");
       });
 
-      const {
-        body: { token },
-      } = await chai.request(server).post("/login").send({
-        email: "mock@gmail.com",
-        password: "12345678",
+      it("retorna status 200", () => {
+        expect(response).to.have.status(200);
       });
 
-      response = await chai
-        .request(server)
-        .post("/recipes")
-        .send({
-          // name: "recipe one",
-          // ingredients: "recipe ingredients",
-          // preparation: "recipe preparation",
-        })
-        .set("authorization", token);
-    });
-
-    it("retorna status 401", () => {
-      expect(response).to.have.status(400);
-    });
-
-    it("retorna body com msg de erro", () => {
-      expect(response.body).to.have.property(
-        "message",
-        "Invalid entries. Try again."
-      );
+      it("retorna array de receitas", () => {
+        expect(response.body).to.be.an("array");
+      });
     });
   });
 
-  describe("quando é enviado token e dados validos", () => {
-    let response = {};
-    before(async () => {
-      const db = await connMock.db("Cookmaster");
-      await db.collection("users").insertOne({
-        name: "user mock",
-        email: "mock@gmail.com",
-        password: "12345678",
-        role: "user",
+  describe("GET recipes/id", () => {
+    describe("quando não é enviado token", () => {
+      const recipe = {
+        name: "kdjfng",
+        ingredients: "kdfjgdfg",
+        preparation: "lkdjfg",
+      };
+      let response = {};
+      before(async () => {
+        const db = await connMock.db("Cookmaster");
+        const { insertedId } = await db.collection("recipes").insertOne(recipe);
+        response = await chai.request(server).get(`/recipes/${insertedId}`);
       });
 
-      const {
-        body: { token },
-      } = await chai.request(server).post("/login").send({
-        email: "mock@gmail.com",
-        password: "12345678",
+      it("retorna status 200", () => {
+        expect(response).to.have.status(200);
       });
 
-      response = await chai
-        .request(server)
-        .post("/recipes")
-        .send({
-          name: "recipe one",
-          ingredients: "recipe ingredients",
-          preparation: "recipe preparation",
-        })
-        .set("authorization", token);
-    });
-
-    it("retorna status 201", () => {
-      expect(response).to.have.status(201);
-    });
-
-    it("retorna body com msg de erro", () => {
-      expect(response.body).to.have.property("recipe").that.is.an("object");
+      it("retorna objeto de receita", () => {
+        expect(response.body).to.be.an("object");
+      });
     });
   });
 });
