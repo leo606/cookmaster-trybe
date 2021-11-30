@@ -1,5 +1,6 @@
 const chai = require("chai");
 const sinon = require("sinon");
+const jwt = require("jsonwebtoken");
 const { MongoMemoryServer } = require("mongodb-memory-server");
 const { MongoClient } = require("mongodb");
 const { expect } = require("chai");
@@ -12,6 +13,7 @@ chai.use(chaiHttp);
 describe("testa funcionamento de users", () => {
   let response = {};
   let DB_SERVER;
+
   before(async () => {
     DB_SERVER = await MongoMemoryServer.create();
     const DB_URI = DB_SERVER.getUri();
@@ -22,45 +24,50 @@ describe("testa funcionamento de users", () => {
 
     sinon.stub(MongoClient, "connect").resolves(connMock);
 
-    response = await chai.request(server).post("/users").send({
+    await chai.request(server).post("/users").send({
       name: "fulano",
       email: "fulano@detal.com",
       password: "passsss123",
     });
+
+    response = await chai.request(server).post("/login").send({
+      email: "fulano@detal.com",
+      password: "passsss123",
+    });
   });
+
   after(async () => {
     await DB_SERVER.stop();
     await MongoClient.connect.restore();
   });
   describe("quando é criado com sucesso", () => {
-    it("retorna status 201", () => {
-      expect(response).to.have.status(201);
+    it("retorna status 200", () => {
+      expect(response).to.have.status(200);
     });
 
-    it("retorna body com dados cadastrados", () => {
-      expect(response.body).to.have.property("user");
-      expect(response.body.user).to.have.property("email", "fulano@detal.com");
-      expect(response.body.user).to.have.property("role", "user");
-      expect(response.body.user).to.have.property("_id");
+    it("retorna body com token", () => {
+      expect(response.body).to.have.property("token");
+      const tokenDecoded = jwt.decode(response.body.token);
+      expect(tokenDecoded).to.have.property("data");
     });
   });
 
   describe("quando é informado dados invalidos", () => {
     before(async () => {
-      response = await chai.request(server).post("/users").send({
-        email: "fulano@detal.com",
+      response = await chai.request(server).post("/login").send({
+        email: "ciclano@detal.com",
         password: "passsss123",
       });
     });
 
-    it("retorna status 201", () => {
-      expect(response).to.have.status(400);
+    it("retorna status 401", () => {
+      expect(response).to.have.status(401);
     });
 
     it("retorna body com msg de erro", () => {
       expect(response.body).to.have.property(
         "message",
-        "Invalid entries. Try again."
+        "Incorrect username or password"
       );
     });
   });
