@@ -1,18 +1,22 @@
 {
   "invalidEntries": { "err": {
-    "code": "invalid_entries",
+    "code": "badRequest",
     "message": "Invalid entries. Try again."
   } },
   "emailAlreadyExists": { "err": {
-    "code": "email_already_exists",
+    "code": "conflict",
     "message": "Email already registered"
   } },
   "invalidRcpId": { "err": {
-    "code": "invalid_entries",
+    "code": "badRequest",
     "message": "Invalid entries. Try again."
   } },
   "rcpNotFound": { "err": {
-    "code": "not_found",
+    "code": "notFound",
     "message": "recipe not found"
+  } },
+  "forbidden": { "err": {
+    "code": "forbidden",
+    "message": "Only admins can register new admins"
   } }
 }
