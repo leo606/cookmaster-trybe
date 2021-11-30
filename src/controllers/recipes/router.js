@@ -6,10 +6,6 @@ const {
   uploadImage,
 } = require('../../middlewares');
 
-// const validateJWT = require('../../middlewares/validateJWT');
-// const validateUpload = require('../../middlewares/validateUpload');
-// const uploadImage = require('../../middlewares/uploadImage');
-
 const router = express.Router();
 
 router.post('/', validateJWT, require('./create'));
