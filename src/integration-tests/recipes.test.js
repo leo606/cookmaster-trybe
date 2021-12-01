@@ -5,29 +5,31 @@ const { MongoClient } = require("mongodb");
 const { expect } = require("chai");
 const chaiHttp = require("chai-http");
 
+const mockConn = require("./mocks/mockConn");
 const server = require("../api/app");
 
 chai.use(chaiHttp);
 
 describe("testa funcionamento de recipes", () => {
   let connMock;
-  let DB_SERVER;
+  const mockUser = {
+    name: "fulano",
+    email: "mock@gmail.com",
+    password: "12345678",
+  };
   before(async () => {
-    DB_SERVER = await MongoMemoryServer.create();
-    const DB_URI = DB_SERVER.getUri();
-    connMock = await MongoClient.connect(DB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    // DB_SERVER = await MongoMemoryServer.create();
+    // const DB_URI = DB_SERVER.getUri();
+    // connMock = await MongoClient.connect(DB_URI, {
+    //   useNewUrlParser: true,
+    //   useUnifiedTopology: true,
+    // });
+    connMock = await mockConn();
 
     sinon.stub(MongoClient, "connect").resolves(connMock);
   });
-  after(async () => {
-    const db = await connMock.db("Cookmaster");
-    await db.collection("recipes").drop();
-    await db.collection("users").drop();
-    await DB_SERVER.stop();
-    await MongoClient.connect.restore();
+  after(() => {
+    MongoClient.connect.restore();
   });
 
   describe("POST recipes", () => {
@@ -57,14 +59,7 @@ describe("testa funcionamento de recipes", () => {
     describe("quando é enviado token, mas dados invalidos", () => {
       let response = {};
       before(async () => {
-        const db = await connMock.db("Cookmaster");
-        await db.collection("users").insertOne({
-          name: "user mock",
-          email: "mock@gmail.com",
-          password: "12345678",
-          role: "user",
-        });
-
+        await chai.request(server).post("/users").send(mockUser);
         const {
           body: { token },
         } = await chai.request(server).post("/login").send({
@@ -75,11 +70,7 @@ describe("testa funcionamento de recipes", () => {
         response = await chai
           .request(server)
           .post("/recipes")
-          .send({
-            // name: "recipe one",
-            // ingredients: "recipe ingredients",
-            // preparation: "recipe preparation",
-          })
+          .send({})
           .set("authorization", token);
       });
 
@@ -153,6 +144,9 @@ describe("testa funcionamento de recipes", () => {
     });
   });
 
+  let tokenRecived;
+  let recipeId;
+
   describe("GET recipes/id", () => {
     describe("quando não é enviado token", () => {
       const recipe = {
@@ -162,9 +156,27 @@ describe("testa funcionamento de recipes", () => {
       };
       let response = {};
       before(async () => {
-        const db = await connMock.db("Cookmaster");
-        const { insertedId } = await db.collection("recipes").insertOne(recipe);
-        response = await chai.request(server).get(`/recipes/${insertedId}`);
+        await chai.request(server).post("/users").send(mockUser);
+        const {
+          body: { token },
+        } = await chai.request(server).post("/login").send({
+          email: "mock@gmail.com",
+          password: "12345678",
+        });
+        tokenRecived = token;
+
+        const {
+          body: {
+            recipe: { _id },
+          },
+        } = await chai
+          .request(server)
+          .post("/recipes")
+          .send(recipe)
+          .set("authorization", token);
+        recipeId = _id;
+
+        response = await chai.request(server).get(`/recipes/${_id}`);
       });
 
       it("retorna status 200", () => {
@@ -173,6 +185,74 @@ describe("testa funcionamento de recipes", () => {
 
       it("retorna objeto de receita", () => {
         expect(response.body).to.be.an("object");
+      });
+    });
+  });
+
+  describe("PUT recipes/id", () => {
+    describe("quando é enviado token, mas user invalido", () => {
+      let response = {};
+      before(async () => {
+        await chai
+          .request(server)
+          .post("/users")
+          .send({
+            name: "fulano",
+            email: "wrong@gmail.com",
+            password: "12345678",
+          });
+        const {
+          body: { token },
+        } = await chai.request(server).post("/login").send({
+          email: "wrong@gmail.com",
+          password: "12345678",
+        });
+
+        response = await chai
+          .request(server)
+          .put(`/recipes/${recipeId}`)
+          .send({
+            name: "change",
+            ingredients: "change",
+            preparation: "change",
+          })
+          .set("authorization", token);
+      });
+
+      it("retorna status 400", () => {
+        expect(response).to.have.status(400);
+      });
+
+      it("retorna objeto de receita", () => {
+        expect(response.body)
+          .to.be.an("object")
+          .that.have.property("message", "Invalid entries. Try again.");
+      });
+    });
+
+    describe("quando é enviado token e user valido", () => {
+      let response = {};
+
+      before(async () => {
+        response = await chai
+          .request(server)
+          .put(`/recipes/${recipeId}`)
+          .send({
+            name: "change",
+            ingredients: "change",
+            preparation: "change",
+          })
+          .set("authorization", tokenRecived);
+      });
+
+      it("retorna status 200 ok", () => {
+        expect(response).to.have.status(200);
+      });
+
+      it("retorna objeto com receita nova", () => {
+        expect(response.body).to.have.property("name", "change");
+        expect(response.body).to.have.property("ingredients", "change");
+        expect(response.body).to.have.property("preparation", "change");
       });
     });
   });
@@ -203,31 +283,12 @@ describe("testa funcionamento de recipes", () => {
     });
 
     describe("quando é enviado token", () => {
-      const recipe = {
-        name: "kdjfng",
-        ingredients: "kdfjgdfg",
-        preparation: "lkdjfg",
-      };
-      const user = {
-        name: "jhsdf kjhsdgf",
-        email: "email@email.com",
-        password: "of87dsyf89n7dyf",
-      };
       let response = {};
       before(async () => {
-        const db = await connMock.db("Cookmaster");
-        const { insertedId } = await db.collection("recipes").insertOne(recipe);
-        await db.collection("users").insertOne(user);
-        const {
-          body: { token },
-        } = await chai.request(server).post("/login").send({
-          email: "email@email.com",
-          password: "of87dsyf89n7dyf",
-        });
         response = await chai
           .request(server)
-          .delete(`/recipes/${insertedId}`)
-          .set("authorization", token);
+          .delete(`/recipes/${recipeId}`)
+          .set("authorization", tokenRecived);
       });
 
       it("retorna status 204 no content", () => {
@@ -236,115 +297,6 @@ describe("testa funcionamento de recipes", () => {
 
       it("retorna objeto vazio", () => {
         expect(response.body).to.be.deep.equal({});
-      });
-    });
-  });
-
-  describe("PUT recipes/id", () => {
-    describe("quando é enviado token, mas user invalido", () => {
-      const recipe = {
-        name: "kdjfng",
-        ingredients: "kdfjgdfg",
-        preparation: "lkdjfg",
-      };
-      const user = {
-        name: "jhsdf kjhsdgf",
-        email: "email@email.com",
-        password: "of87dsyf89n7dyf",
-        role: "user",
-      };
-      let response = {};
-      before(async () => {
-        const db = await connMock.db("Cookmaster");
-        await db.collection("users").drop();
-        await db.collection("recipes").drop();
-        await db.collection("users").insertOne(user);
-
-        const { insertedId } = await db.collection("recipes").insertOne(recipe);
-
-        const {
-          body: { token },
-        } = await chai.request(server).post("/login").send({
-          email: "email@email.com",
-          password: "of87dsyf89n7dyf",
-        });
-
-        response = await chai
-          .request(server)
-          .put(`/recipes/${insertedId}`)
-          .send({
-            name: "change",
-            ingredients: "change",
-            preparation: "change",
-          })
-          .set("authorization", token);
-      });
-
-      it("retorna status 400", () => {
-        expect(response).to.have.status(400);
-      });
-
-      it("retorna objeto de receita", () => {
-        expect(response.body)
-          .to.be.an("object")
-          .that.have.property("message", "Invalid entries. Try again.");
-      });
-    });
-
-    describe("quando é enviado token e user valido", () => {
-      let response = {};
-
-      before(async () => {
-        const db = await connMock.db("Cookmaster");
-        await db.collection("users").drop();
-        await db.collection("recipes").drop();
-
-        await chai.request(server).post("/users").send({
-          name: "name name",
-          email: "email@email.com",
-          password: "of87dsyf89n7dyf",
-        });
-
-        const {
-          body: { token },
-        } = await chai.request(server).post("/login").send({
-          email: "email@email.com",
-          password: "of87dsyf89n7dyf",
-        });
-
-        const {
-          body: {
-            recipe: { _id: insertedId },
-          },
-        } = await chai
-          .request(server)
-          .post("/recipes")
-          .send({
-            name: "kdjfng",
-            ingredients: "kdfjgdfg",
-            preparation: "lkdjfg",
-          })
-          .set("authorization", token);
-
-        response = await chai
-          .request(server)
-          .put(`/recipes/${insertedId}`)
-          .send({
-            name: "change",
-            ingredients: "change",
-            preparation: "change",
-          })
-          .set("authorization", token);
-      });
-
-      it("retorna status 200 ok", () => {
-        expect(response).to.have.status(200);
-      });
-
-      it("retorna objeto com receita nova", () => {
-        expect(response.body).to.have.property("name", "change");
-        expect(response.body).to.have.property("ingredients", "change");
-        expect(response.body).to.have.property("preparation", "change");
       });
     });
   });

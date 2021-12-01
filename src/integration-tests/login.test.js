@@ -1,26 +1,21 @@
 const chai = require("chai");
 const sinon = require("sinon");
 const jwt = require("jsonwebtoken");
-const { MongoMemoryServer } = require("mongodb-memory-server");
 const { MongoClient } = require("mongodb");
 const { expect } = require("chai");
 const chaiHttp = require("chai-http");
 
+const mockConn = require("./mocks/mockConn");
 const server = require("../api/app");
 
 chai.use(chaiHttp);
 
-describe("testa funcionamento de users", () => {
+describe("testa funcionamento de login", () => {
   let response = {};
-  let DB_SERVER;
+  let connMock;
 
   before(async () => {
-    DB_SERVER = await MongoMemoryServer.create();
-    const DB_URI = DB_SERVER.getUri();
-    const connMock = await MongoClient.connect(DB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    connMock = await mockConn();
 
     sinon.stub(MongoClient, "connect").resolves(connMock);
 
@@ -36,9 +31,8 @@ describe("testa funcionamento de users", () => {
     });
   });
 
-  after(async () => {
-    await DB_SERVER.stop();
-    await MongoClient.connect.restore();
+  after(() => {
+    MongoClient.connect.restore();
   });
   describe("quando é criado com sucesso", () => {
     it("retorna status 200", () => {
