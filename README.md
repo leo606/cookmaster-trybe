@@ -24,9 +24,9 @@ As principais habilidades desenvolvidas nesse projeto foram:
 
 ## O que foi ser desenvolvido
 
-Foi desenvolvido uma api utilizando a arquitetura MSC no padrão REST!
+Esse foi um dos projetos feitos durante o curso de Desenvolvimento Web na Trybe. Foi desenvolvido uma api utilizando a arquitetura MSC no padrão REST!
 
-Neste projeto é possível fazer o cadastro e login de pessoas usuárias, onde apenas essas pessoas poderão acessar, modificar e deletar as receitas que cadastrou.
+Nessa API é possível fazer o cadastro e login de pessoas usuárias, onde apenas essas pessoas poderão acessar, modificar e deletar as receitas que cadastrou.
 
 ---
 
